@@ -22,7 +22,7 @@ export function useProgress() {
         setStreak(data.streak || 0)
       }
     } catch (e) {
-      console.error('Error loading local progress:', e)
+      console.warn('Error loading local progress:', e)
     }
     setLoading(false)
   }, [])
@@ -37,13 +37,13 @@ export function useProgress() {
         updatedAt: new Date().toISOString()
       }))
     } catch (e) {
-      console.error('Error saving local progress:', e)
+      console.warn('Error saving local progress:', e)
     }
   }, [])
 
   // Check auth state
   useEffect(() => {
-    if (!useSupabase) {
+    if (!useSupabase || !supabase) {
       setAuthLoading(false)
       loadLocalProgress()
       return
@@ -67,7 +67,7 @@ export function useProgress() {
   useEffect(() => {
     if (authLoading) return
 
-    if (user && useSupabase) {
+    if (user && useSupabase && supabase) {
       loadSupabaseProgress()
     } else {
       loadLocalProgress()
@@ -76,6 +76,11 @@ export function useProgress() {
 
   // Load from Supabase
   async function loadSupabaseProgress() {
+    if (!supabase) {
+      loadLocalProgress()
+      return
+    }
+    
     setLoading(true)
     try {
       const { data, error } = await supabase
@@ -117,7 +122,7 @@ export function useProgress() {
 
   // Save to Supabase
   async function saveSupabaseProgress(days, day, str) {
-    if (!user || !useSupabase) return
+    if (!user || !useSupabase || !supabase) return
 
     try {
       await supabase
@@ -195,7 +200,7 @@ export function useProgress() {
 
   // Auth functions
   async function signInWithEmail(email, password) {
-    if (!useSupabase) return { error: { message: 'Supabase not configured' } }
+    if (!useSupabase || !supabase) return { error: { message: 'Supabase not configured' } }
     
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -205,7 +210,7 @@ export function useProgress() {
   }
 
   async function signUpWithEmail(email, password) {
-    if (!useSupabase) return { error: { message: 'Supabase not configured' } }
+    if (!useSupabase || !supabase) return { error: { message: 'Supabase not configured' } }
     
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -215,7 +220,7 @@ export function useProgress() {
   }
 
   async function signInWithMagicLink(email) {
-    if (!useSupabase) return { error: { message: 'Supabase not configured' } }
+    if (!useSupabase || !supabase) return { error: { message: 'Supabase not configured' } }
     
     const { data, error } = await supabase.auth.signInWithOtp({
       email,
@@ -227,7 +232,7 @@ export function useProgress() {
   }
 
   async function signOut() {
-    if (!useSupabase) return
+    if (!useSupabase || !supabase) return
     await supabase.auth.signOut()
     setUser(null)
   }
